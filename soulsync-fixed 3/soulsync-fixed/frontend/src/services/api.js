@@ -1,4 +1,4 @@
-const API_BASE = 'https://soulsync-ai-companion-2.onrender.com';
+const API_BASE = 'https://my-project-f-ndo2.onrender.com';
 const getToken = () => localStorage.getItem('soulsync_token');
 
 const authFetch = async (endpoint, options = {}) => {
