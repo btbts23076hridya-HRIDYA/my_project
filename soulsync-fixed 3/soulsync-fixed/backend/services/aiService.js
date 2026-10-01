@@ -274,10 +274,9 @@ RESPONSE RULES:
   }
 
   const models = [
-    'llama-3.3-70b-versatile',
-    'llama-3.1-8b-instant',
-    'llama-3.1-70b-versatile',
-  ];
+  'openai/gpt-oss-120b',
+  'openai/gpt-oss-20b',
+];
 
   for (const model of models) {
     try {
@@ -286,7 +285,7 @@ RESPONSE RULES:
         'api.groq.com',
         '/openai/v1/chat/completions',
         GROQ_KEY.trim(),
-        { model, messages, max_tokens: 400, temperature: 0.92, top_p: 0.95 }
+        { model, messages, max_tokens: 1024, temperature: 0.92, top_p: 0.95 }
       );
 
       console.log(`   Status: ${result.status}`);
