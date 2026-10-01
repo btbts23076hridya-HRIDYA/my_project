@@ -37,12 +37,12 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(morgan('dev'));
 
-app.use('/auth', authRoutes);
-app.use('/chat', chatRoutes);
-app.use('/journal', journalRoutes);
-app.use('/mood', moodRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/journal', journalRoutes);
+app.use('/api/mood', moodRoutes);
 
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ success: true, message: '🦋 SoulSync running' });
 });
 
@@ -58,7 +58,6 @@ const server = app.listen(PORT, () => {
   console.log(`🦋  SoulSync Backend is RUNNING!`);
   console.log(`🦋  http://localhost:${PORT}`);
   console.log(`🦋  Groq Key: ${process.env.GROQ_API_KEY ? '✅ SET' : '❌ MISSING'}`);
-  console.log(`🦋  MongoDB: ${process.env.MONGODB_URI}`);
   console.log('🦋 ══════════════════════════════════\n');
 });
 
