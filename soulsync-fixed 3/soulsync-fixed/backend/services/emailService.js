@@ -1,22 +1,5 @@
-const nodemailer = require('nodemailer');
-
-// Create transporter using Gmail
-// Create transporter using explicit SMTP host and port 465
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // Use SSL
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS, // Must be 16-character App Password
-    },
-    tls: {
-      rejectUnauthorized: false
-    },
-    connectionTimeout: 10000, // 10 seconds timeout instead of hanging
-  });
-};
+// email.js — sends via Brevo HTTPS API (works on Render free tier)
+// No nodemailer needed. Requires Node 18+ (built-in fetch).
 
 // Beautiful HTML email template
 const verificationEmailHTML = (name, otp) => `
@@ -50,7 +33,7 @@ const verificationEmailHTML = (name, otp) => `
       <div style="background:linear-gradient(135deg,#f5f0ff,#fce7f3);border-radius:16px;padding:28px;text-align:center;margin:0 0 28px;border:2px solid #e5d8ff;">
         <p style="color:#7c3aed;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin:0 0 12px;">Your Verification Code</p>
         <div style="font-size:48px;font-weight:800;letter-spacing:12px;color:#4c1d95;font-family:monospace;">${otp}</div>
-        <p style="color:#9c7cc0;font-size:13px;margin:12px 0 0;">⏰ This code expires in <strong>3 minutes</strong></p>
+        <p style="color:#9c7cc0;font-size:13px;margin:12px 0 0;">⏰ This code expires in <strong>10 minutes</strong></p>
       </div>
 
       <p style="color:#9c7cc0;font-size:13px;line-height:1.6;margin:0;">
@@ -69,24 +52,40 @@ const verificationEmailHTML = (name, otp) => `
 `;
 
 const sendVerificationEmail = async (toEmail, name, otp) => {
-  // If no email config, log OTP to console (for development)
-  if (!process.env.EMAIL_USER || process.env.EMAIL_USER === 'your_gmail@gmail.com') {
+  // Dev mode: no API key configured
+  if (!process.env.BREVO_API_KEY) {
     console.log('\n📧 ══════════════════════════════════════');
-    console.log('📧  EMAIL NOT CONFIGURED — Dev Mode');
+    console.log('📧  BREVO_API_KEY NOT SET — Dev Mode');
     console.log(`📧  OTP for ${toEmail}: ${otp}`);
     console.log('📧 ══════════════════════════════════════\n');
     return { success: true, devMode: true };
   }
 
   try {
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || `SoulSync 🦋 <${process.env.EMAIL_USER}>`,
-      to: toEmail,
-      subject: `${otp} is your SoulSync verification code 🦋`,
-      html: verificationEmailHTML(name, otp),
-      text: `Hey ${name}! Your SoulSync verification code is: ${otp}. It expires in 3 minutes.`,
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: {
+          name: process.env.EMAIL_FROM_NAME || 'SoulSync',
+          email: process.env.EMAIL_FROM_ADDRESS,
+        },
+        to: [{ email: toEmail, name }],
+        subject: `${otp} is your SoulSync verification code 🦋`,
+        htmlContent: verificationEmailHTML(name, otp),
+        textContent: `Hey ${name}! Your SoulSync verification code is: ${otp}. It expires in 10 minutes.`,
+      }),
     });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Brevo ${res.status}: ${errText}`);
+    }
+
     console.log(`📧 Verification email sent to ${toEmail}`);
     return { success: true, devMode: false };
   } catch (error) {
